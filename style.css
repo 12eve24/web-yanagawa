@@ -1,0 +1,460 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  background: linear-gradient(0deg, #2b4671, #2b4671 27%, #eeeeee 27% 37%, #d1ab68 37% 100%);
+}
+
+.image-row {
+  /* row height and image height are driven by variables so we can position
+     the row such that the bottom of images aligns with the background
+     gradient boundary at 37vh */
+  --row-height: 60vh; /* previous value kept for reference */
+  --img-height: calc(var(--row-height) * 0.6); /* 60% of row height -> 36vh */
+
+  position: absolute; /* position relative to viewport */
+  left: 0;
+  right: 0;
+  /* place the bottom of the image-row 1px lower than current */
+  /* bottom distance from viewport bottom = 100vh - 37vh - 227px */
+  bottom: calc(100vh - 37vh - 227px);
+
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-end; /* align images to bottom of the row */
+  /* remove bottom padding so image bottom sits exactly at the container bottom */
+  padding: 1rem 1rem 0 1rem;
+  height: var(--img-height);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible; /* allow hover scale to render without clipping top edge */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 1rem;
+}
+
+/* Top row: img27-32 at 50% size */
+.image-row-top {
+  --img-height-top: 18vh; /* 50% of main row height */
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* place above the main row */
+  bottom: calc(100vh - 37vh + 18vh + 1rem);
+
+  display: flex;
+  flex-direction: row;
+  gap: 12px; /* dynamically adjusted by JavaScript */
+  align-items: flex-end;
+  padding: 1rem 1rem 0 1rem;
+  height: var(--img-height-top);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 1rem;
+}
+
+.image-row-top {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.image-row-top::-webkit-scrollbar {
+  display: none;
+}
+
+.image-row-top img {
+  flex: 0 0 auto;
+  height: 100%;
+  width: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  scroll-snap-align: center;
+  box-shadow: none;
+  transition: transform 180ms ease, opacity 180ms ease;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.image-row-top img:hover {
+  opacity: 1;
+}
+
+/* hide the inline scrollbar inside the image row; we'll show a proxy at the bottom */
+.image-row {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.image-row::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* fixed scrollbar proxy at the bottom */
+.scrollbar-proxy {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px; /* visible scrollbar area */
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent;
+  z-index: 9999;
+}
+.scrollbar-inner {
+  height: 1px; /* tiny inner element; width set by JS to match scrollable content */
+}
+
+/* scrollbar proxy for top row */
+.scrollbar-proxy-top {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 32px; /* stacked above the other proxies */
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent;
+  z-index: 9997;
+}
+.scrollbar-inner-top {
+  height: 1px;
+}
+.scrollbar-proxy-top::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollbar-proxy-top::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.03);
+}
+.scrollbar-proxy-top::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 6px;
+}
+
+/* style the proxy scrollbar for WebKit browsers */
+.scrollbar-proxy::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollbar-proxy::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.03);
+}
+.scrollbar-proxy::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 6px;
+}
+
+/* proxy scrollbar for second row */
+.scrollbar-proxy-second {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 16px; /* stacked above the first proxy */
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent;
+  z-index: 9998;
+}
+.scrollbar-inner-second {
+  height: 1px;
+}
+.scrollbar-proxy-second::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollbar-proxy-second::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.03);
+}
+.scrollbar-proxy-second::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 6px;
+}
+
+/* Lightbox (overlay) styles */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.lightbox.open {
+  display: flex;
+}
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.lightbox-panel {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10001;
+}
+.lightbox-panel img {
+  width: 80%; /* display size 80% */
+  height: auto;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+}
+.lightbox-close {
+  position: absolute;
+  --button-size: 46px;
+  --button-offset-x: calc(50% + 445px);
+  --symbol-size: 14px;
+  --text-size: 10px;
+  
+  top: calc(1rem + 5px);
+  right: auto;
+  left: var(--button-offset-x);
+  z-index: 10002;
+  width: var(--button-size);
+  height: var(--button-size);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #3E2700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 200ms ease;
+  padding: 0;
+}
+
+/* レスポンシブ対応: タブレット・中画面 (max-width: 1400px) */
+@media (max-width: 1400px) {
+  .lightbox-close {
+    --button-size: 42px;
+    --button-offset-x: calc(50% + 380px);
+    --symbol-size: 12px;
+    --text-size: 9px;
+  }
+}
+
+/* レスポンシブ対応: モバイル・小画面 (max-width: 900px) */
+@media (max-width: 900px) {
+  .lightbox-close {
+    --button-size: 38px;
+    --button-offset-x: calc(50% + 300px);
+    --symbol-size: 11px;
+    --text-size: 8px;
+  }
+}
+
+/* レスポンシブ対応: 極小画面 (max-width: 600px) */
+@media (max-width: 600px) {
+  .lightbox-close {
+    --button-size: 32px;
+    --button-offset-x: calc(50% + 200px);
+    --symbol-size: 10px;
+    --text-size: 7px;
+  }
+}
+
+.lightbox-close-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.lightbox-close-symbol {
+  font-size: var(--symbol-size);
+  font-weight: bold;
+  color: #3E2700;
+  font-family: serif;
+  line-height: 1;
+}
+
+.lightbox-close-text {
+  font-size: var(--text-size);
+  font-weight: bold;
+  color: #3E2700;
+  font-family: serif;
+  line-height: 1;
+}
+.lightbox-close:hover {
+  background: rgba(62, 39, 0, 0.05);
+}
+
+.image-row::-webkit-scrollbar {
+  height: 10px;
+}
+.image-row::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.04);
+}
+.image-row::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 6px;
+}
+
+.image-row img {
+  flex: 0 0 auto;
+  /* set image height to fill the row (row is positioned so bottom aligns) */
+  height: 100%;
+  width: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  scroll-snap-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border 180ms ease;
+  opacity: 0.95;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transform-origin: center bottom; /* scale from the bottom edge to avoid sinking into the background */
+}
+
+.image-row img:hover {
+  transform: scale(1.05) translateY(-4px); /* lift slightly while avoiding top-edge clipping */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Second row: img21-26 positioned below the first row */
+.image-row-second {
+  --img-height-second: 36vh;
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* position below the first row; first row bottom is at 37vh, so place this slightly below */
+  bottom: calc(100vh - 37vh - var(--img-height-second) - 2rem - 100px);
+
+  display: flex;
+  flex-direction: row;
+  gap: 600px;
+  align-items: flex-end;
+  padding: 1rem 1rem 0 1rem;
+  height: var(--img-height-second);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 1rem;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+.image-row-second {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.image-row-second::-webkit-scrollbar {
+  display: none;
+}
+
+.image-row-second img {
+  flex: 0 0 auto;
+  height: 60%;
+  width: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  scroll-snap-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border 180ms ease;
+  opacity: 0.95;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.image-row-second img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+/* img24 specific: smaller size at 30% */
+.image-row-second img[alt="img24"] {
+  height: 30%;
+  margin-left: -500px;
+}
+
+/* img23 and img24: synchronized hover effect */
+.image-row-second img[alt="img23"].hovered-group,
+.image-row-second img[alt="img24"].hovered-group {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Create a connected visual border - add shadow to show connection */
+.image-row-second img[alt="img23"].hovered-group {
+  border-right: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.image-row-second img[alt="img24"].hovered-group {
+  border-left: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* img23 and img24: connected hover effect */
+.image-row-second img[alt="img23"],
+.image-row-second img[alt="img24"] {
+  position: relative;
+}
+
+.image-row-second img[alt="img23"]:hover,
+.image-row-second img[alt="img24"]:hover,
+.image-row-second img[alt="img23"]:hover ~ img[alt="img24"],
+.image-row-second img[alt="img24"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Create a connected visual effect */
+.image-row-second img[alt="img23"]:hover,
+.image-row-second img[alt="img24"]:hover {
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Third row: img33-36 at 20% size - no hover, seamless background */
+.image-row-third {
+  --img-height-third: 7.2vh; /* 20% of 36vh */
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* position below the second row */
+  bottom: calc(100vh - 37vh - var(--img-height-third) - 2rem - 100px);
+
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 1rem 1rem 0 1rem;
+  height: var(--img-height-third);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 1rem;
+}
+
+.image-row-third {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.image-row-third::-webkit-scrollbar {
+  display: none;
+}
+
+/* placeholder to preserve spacing */
